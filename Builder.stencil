@@ -1,0 +1,31 @@
+{% macro makeMutableProperty property %}
+        private var {{ property.name }}: {{ property.typeName }}
+{% endmacro %}
+{% macro makePropertySetter property %}
+        func {{ property.name }}(_ {{ property.name }}: {{ property.typeName }}) -> Builder {
+            self.{{ property.name }} = {{ property.name }}
+            return self
+        }
+{% endmacro %}
+{% macro makeBuildFuction type %}
+        func build() -> {{ type.name }} {
+            return {{ type.name }}({% for variable in type.storedVariables %}{{ variable.name }}: {{ variable.name }}{% if not forloop.last%}, {% endif %}{% endfor %})
+        }
+{% endmacro %}
+{% for type in types.structs|class where type.based.Builder or type|annotated:"Builder" %}{% if type.name != "Builder" %}
+extension {{ type.name }} {
+    static var builder: Builder { return Builder() }
+
+    final class Builder {
+        {% for variable in type.storedVariables %}
+        {% call makeMutableProperty variable %}
+        {% endfor %}
+        {% for variable in type.storedVariables %}
+
+            {% call makePropertySetter variable %}
+        {% endfor %}
+
+        {% call makeBuildFuction type %}
+    }
+}
+{% endif %}{% endfor %}
